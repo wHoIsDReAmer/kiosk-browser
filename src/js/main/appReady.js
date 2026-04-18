@@ -73,10 +73,17 @@ function computeDisplayCover(displayNums, fullscreen) {
   const displays = validDisplayNums.map((n) => allDisplays[n]);
 
   if (validDisplayNums.length > 1) {
-    displays.forEach(({ bounds, workArea }, n) => {
+    displays.forEach(({ bounds, workArea, id }, n) => {
+      logger.info(
+        'Display cover[%i] -> displayId=%s bounds=%o workArea=%o',
+        n,
+        id,
+        bounds,
+        workArea,
+      );
       if (!compareRectangles(bounds, workArea))
         logger.warn(
-          'Work area of display %i differs from bounds. Expect incomplete display coverage. (%o vs. %o)',
+          'Using bounds instead of workArea for display %i to avoid incomplete multi-display coverage. (%o vs. %o)',
           n,
           workArea,
           bounds,
@@ -84,7 +91,10 @@ function computeDisplayCover(displayNums, fullscreen) {
     });
   }
 
-  const rects = displays.map((d) => (fullscreen ? d.bounds : d.workArea));
+  // For display spanning we want the physical monitor extents, not the
+  // work area minus desktop panels/struts. KDE/X11 multi-monitor layouts can
+  // report workArea coordinates that shift the union rectangle to the right.
+  const rects = displays.map((d) => d.bounds);
   return joinRectangles(rects);
 }
 
