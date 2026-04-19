@@ -269,7 +269,18 @@ async function createMainWindow(args, options) {
     return () => undefined; // NOOP
   })();
 
-  adjustWindowBounds();
+  const reapplyWindowBounds = (reason) => {
+    adjustWindowBounds();
+    if (args['always-on-top']) mainWindow.moveTop();
+    logger.info(
+      'Reapplied window bounds (%s): bounds=%o contentBounds=%o',
+      reason,
+      mainWindow.getBounds(),
+      mainWindow.getContentBounds(),
+    );
+  };
+
+  reapplyWindowBounds('initial');
 
   // open the developer tools now if requested
   if (args.dev) mainWindow.openDevTools();
@@ -298,11 +309,14 @@ async function createMainWindow(args, options) {
       mainWindow.setFullScreen(true);
     }
 
-    adjustWindowBounds();
+    reapplyWindowBounds('before-show');
 
     // also adjust the zoom of the draggable area
     setZoomFactor(webContents, webContents.zoomFactor);
     mainWindow.show();
+    reapplyWindowBounds('after-show');
+    setTimeout(() => reapplyWindowBounds('post-show-100ms'), 100);
+    setTimeout(() => reapplyWindowBounds('post-show-500ms'), 500);
   };
 
   mainWindow.on('ready-to-show', show);
